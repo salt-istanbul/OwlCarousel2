@@ -12,34 +12,6 @@ To do:
 * itemsScaleUp 
 * Test Zepto
 
-Callback events list:
-
-onInitBefore
-onInitAfter
-onResponsiveBefore
-onResponsiveAfter
-onTransitionStart
-onTransitionEnd
-onTouchStart
-onTouchEnd
-onChangeState
-onLazyLoaded
-onVideoPlay
-onVideoStop
-
-Custom events list:
-
-next.owl
-prev.owl
-goTo.owl
-jumpTo.owl
-addItem.owl
-removeItem.owl
-refresh.owl
-play.owl
-stop.owl
-stopVideo.owl
-
 */
 
 
@@ -61,7 +33,6 @@ stopVideo.owl
 		merge:				false,
 		mergeFit:			true,
 		autoWidth:			false,
-		autoHeight:			false,
 
 		startPosition:		0,
 		URLhashListener:	false,
@@ -73,9 +44,6 @@ stopVideo.owl
 		dots: 				true,
 		dotsEach:			false,
 		dotData:			false,
-
-		lazyLoad:			false,
-		lazyContent:		false,
 
 		autoplay:			false,
 		autoplayTimeout:	5000,
@@ -93,12 +61,8 @@ stopVideo.owl
 		responsiveBaseElement: window,
 		responsiveClass:	false,
 
-		animateOut:			false,
-		animateIn:			false,
-
 		fallbackEasing:		'swing',
 
-		callbacks:			true,
 		info: 				false,
 
 		nestedItemSelector:	false,
@@ -107,6 +71,8 @@ stopVideo.owl
 
 		navContainer: 		false,
 		dotsContainer: 		false,
+
+		callbackExt:		'.owl',
 
 		//Classes and Names
 		themeClass: 		'owl-theme',
@@ -118,8 +84,7 @@ stopVideo.owl
 		navClass:			['owl-prev','owl-next'],
 		controlsClass:		'owl-controls',
 		dotClass: 			'owl-dot',
-		dotsClass:			'owl-dots',
-		autoHeightClass:	'owl-height'
+		dotsClass:			'owl-dots'
 
 	};
 
@@ -223,8 +188,7 @@ stopVideo.owl
 		isSwiping:		false,
 		direction:		false,
 		inMotion:		false,
-		autoplay:		false,
-		lazyContent:	false
+		autoplay:		false
 	};
 
 	// Event functions references
@@ -283,7 +247,7 @@ stopVideo.owl
 
 	Owl.prototype.init = function(){
 
-		this.fireCallback('onInitBefore');
+		this.fireCallback('onInitialize');
 
 		//Add base class
 		if(!this.dom.$el.hasClass(this.options.baseClass)){
@@ -349,7 +313,7 @@ stopVideo.owl
 		this.refresh(true);
 		this.dom.$el.removeClass('owl-loading').addClass('owl-loaded');
 
-		this.fireCallback('onInitAfter');
+		this.fireCallback('onInitialized');
 	};
 
 	/**
@@ -452,20 +416,6 @@ stopVideo.owl
 			this.options.dotsEach = 1;
 			this.options.merge = false;
 		}
-		if(this.state.lazyContent){
-			this.options.loop = false;
-			this.options.merge = false;
-			this.options.dots = false;
-			this.options.freeDrag = false;
-			this.options.lazyContent = true;
-		}
-
-		if((this.options.animateIn || this.options.animateOut) && this.options.items === 1 && this.support3d && this.plugins.animate){
-			this.state.animate = true;
-		} else {this.state.animate = false;}
-
-		this.options.lazyLoad = this.plugins.lazyLoad && this.options.lazyLoad ? true : false;
-
 	};
 
 	/**
@@ -529,7 +479,6 @@ stopVideo.owl
 		}
 	};
 
-
 	/**
 	 * initStructure
 	 * @param [refresh] - if refresh and not lazyContent then dont create normal structure
@@ -537,27 +486,9 @@ stopVideo.owl
 	 */
 
 	Owl.prototype.initStructure = function(){
+		// create normal structure
+		this.createNormalStructure();
 
-		// lazyContent needs at least 3*items 
-
-		if(this.options.lazyContent && this.num.oItems >= this.options.items*3){
-			this.state.lazyContent = true;
-		} else {
-			this.state.lazyContent = false;
-		}
-
-		if(this.state.lazyContent){
-
-			// start position
-			this.pos.currentAbs = this.options.items;
-
-			//remove lazy content from DOM
-			this.dom.$content.remove();
-
-		} else {
-			// create normal structure
-			this.createNormalStructure();
-		}
 	};
 
 	/**
@@ -589,26 +520,6 @@ stopVideo.owl
 			this.setData(item,false);
 			this.dom.$stage.append(item);
 		}
-	};
-
-	/**
-	 * createLazyContentStructure
-	 * @desc Create lazyContent structure for large content and better mobile experience
-	 * @since 2.0.0
-	 */
-
-	Owl.prototype.createLazyContentStructure = function(refresh){
-		if(!this.state.lazyContent){return false;}
-
-		// prevent recreate - to do
-		if(refresh && this.dom.$stage.children().length === this.options.items*3){
-			return false;
-		}
-		// remove items from stage
-		this.dom.$stage.empty();
-
-		// create custom structure
-		this.createCustomStructure(3*this.options.items);
 	};
 
 	/**
@@ -720,7 +631,7 @@ stopVideo.owl
 	 */
 
 	Owl.prototype.loopClone = function(){
-		if(!this.options.loop || this.state.lazyContent || this.num.oItems < this.options.items){return false;}
+		if(!this.options.loop || this.num.oItems < this.options.items){return false;}
 
 		var firstClone,	lastClone, i,
 			num	=		this.options.items, 
@@ -1024,15 +935,11 @@ stopVideo.owl
 		var elChanged = this.isElWidthChanged();
 		if(!elChanged){return false;}
 
-		var event = $.Event('resize.owl.carousel');
-		this.dom.$el.trigger(event)
-		if (event.isDefaultPrevented()) return false;
-
 		this.state.responsive = true;
 		this.refresh();
 		this.state.responsive = false;
 
-		this.dom.$el.trigger('resized.owl.carousel')
+		this.fireCallback('onResized');
 	};
 
 	/**
@@ -1043,15 +950,10 @@ stopVideo.owl
 
 	Owl.prototype.refresh = function(init){
 
-		var event = $.Event('refresh.owl.carousel');
-		this.dom.$el.trigger(event);
-		if (event.isDefaultPrevented()) return false;
+		this.fireCallback('onRefresh');
 
 		// Update Options for given width
 		this.setResponsiveOptions();
-
-		//set lazy structure
-		this.createLazyContentStructure(true);
 
 		// update info about local content
 		this.updateLocalContent();
@@ -1080,16 +982,10 @@ stopVideo.owl
 		//aaaand show.
 		this.dom.$stage.removeClass('owl-refresh');
 
-		// to do
-		// lazyContent last position on refresh
-		if(this.state.lazyContent){
-			this.pos.currentAbs = this.options.items;
-		}
-
 		this.initPosition(init);
 
 		// jump to last position 
-		if(!this.state.lazyContent && !init){
+		if(!init){
 			this.jumpTo(this.pos.current,false); // fix that 
 		}
 
@@ -1100,21 +996,14 @@ stopVideo.owl
 
 		this.updateControls();
 
-		// update drag events
-		//this.updateEvents();
-
 		// update autoplay
 		this.autoplay();
-
-		if(this.plugins.autoHeight){
-			this.plugins.autoHeight.setHeight();
-		}
 
 		this.state.orientation = window.orientation;
 
 		this.watchVisibility();
 		
-		this.dom.$el.trigger('refreshed.owl.carousel')
+		this.fireCallback('onRefreshed');
 	};
 
 	/**
@@ -1125,22 +1014,15 @@ stopVideo.owl
 
 	Owl.prototype.updateItemState = function(update){
 
-		this.dom.$el.trigger('update.owl.carousel');
-		
-		if(this.state.lazyContent){
-			this.updateLazyContent(update);
-		}
+		this.fireCallback('onUpdate');
 
 		if(this.options.center){
 			this.dom.$items.eq(this.pos.currentAbs)
 			.addClass(this.options.centerClass)
 			.data('owl-item').center = true;
 		}
-		if(this.options.lazyLoad){
-			this.plugins.lazyLoad.check();
-		}
-		
-		this.dom.$el.trigger('updated.owl.carousel');
+
+		this.fireCallback('onUpdated');
 	};
 
 	/**
@@ -1188,7 +1070,7 @@ stopVideo.owl
 				if(!this.options.lazyLoad){
 					item.data('owl-item').loaded = true;
 				}
-				if(this.options.loop && (this.options.lazyLoad || this.options.center)){
+				if(this.options.loop){
 					this.updateClonedItemsState(item.data('owl-item').index);
 				}
 			}
@@ -1218,119 +1100,6 @@ stopVideo.owl
 				}
 			}
 		}
-	};
-
-	/**
-	 * updateLazyPosition
-	 * @desc Set current state on sibilings items for lazyLoad and center
-	 * @since 2.0.0
-	 */
-
-	Owl.prototype.updateLazyPosition = function(){
-		var jumpTo = this.pos.goToLazyContent || 0;
-
-		this.pos.lcMovedBy = Math.abs(this.options.items - this.pos.currentAbs);
-
-		if(this.options.items < this.pos.currentAbs ){
-			this.pos.lcCurrent += this.pos.currentAbs - this.options.items;
-			this.state.lcDirection = 'right';
-		} else if(this.options.items > this.pos.currentAbs ){
-			this.pos.lcCurrent -= this.options.items - this.pos.currentAbs;
-			this.state.lcDirection = 'left';
-		}
-
-		this.pos.lcCurrent = jumpTo !== 0 ? jumpTo : this.pos.lcCurrent;
-
-		if(this.pos.lcCurrent >= this.dom.$content.length){
-			this.pos.lcCurrent = this.pos.lcCurrent-this.dom.$content.length;
-		} else if(this.pos.lcCurrent < -this.dom.$content.length+1){
-			this.pos.lcCurrent = this.pos.lcCurrent+this.dom.$content.length;
-		}
-
-		if(this.options.startPosition>0){
-			this.pos.lcCurrent = this.options.startPosition;
-			this._options.startPosition = this.options.startPosition = 0;
-		}
-
-		this.pos.lcCurrentAbs = this.pos.lcCurrent < 0 ? this.pos.lcCurrent+this.dom.$content.length : this.pos.lcCurrent;
-
-	};
-
-	/**
-	 * updateLazyContent
-	 * @param [update] - boolean - update call by content manipulations
-	 * @since 2.0.0
-	 */
-
-	Owl.prototype.updateLazyContent = function(update){
-
-		if(this.pos.lcCurrent === undefined){
-			this.pos.lcCurrent = 0;
-			this.pos.current = this.pos.currentAbs = this.options.items;
-		}
-
-
-		if(!update){
-			this.updateLazyPosition();
-		}
-		var i,j,item,contentPos,content,freshItem,freshData;
-
-		this.pos.current = this.pos.currentAbs = this.options.items;
-		this.setSpeed(0);
-
-		if(this.state.lcDirection !== false){
-			for(i = 0; i<this.pos.lcMovedBy; i++){
-
-				if(this.state.lcDirection === 'right'){
-					item = this.dom.$stage.find('.owl-item').eq(0); 
-					item.appendTo(this.dom.$stage);
-				}
-				if(this.state.lcDirection === 'left'){
-					item = this.dom.$stage.find('.owl-item').eq(-1);
-					item.prependTo(this.dom.$stage);
-				}
-				item.data('owl-item').active = false;
-			}
-		}
-
-		// recollect 
-		this.dom.$items = this.dom.$stage.find('.owl-item');
-
-		for(j = 0; j<this.num.items; j++){
-
-			// to do
-			//this.dom.$items.eq(j).removeClass(this.options.centerClass);
-
-			// get Content 
-			contentPos = this.pos.lcCurrent + j - this.options.items;// + this.options.startPosition;
-
-			if(contentPos >= this.dom.$content.length){
-				contentPos = contentPos - this.dom.$content.length;
-			}
-			if(contentPos < -this.dom.$content.length){
-				contentPos = contentPos + this.dom.$content.length;
-			}
-
-			content = this.dom.$content.eq(contentPos);
-			freshItem = this.dom.$items.eq(j);
-			freshData = freshItem.data('owl-item');
-
-			if(freshData.active === false || this.pos.goToLazyContent !== 0 || update === true){
-
-				freshItem.empty();
-				freshItem.append(content.clone(true,true));
-				freshData.active = true;
-				freshData.current = true;
-				if(!this.options.lazyLoad){
-					freshData.loaded = true;
-				} else {
-					freshData.loaded = false;
-				}
-			}
-		}
-		this.animStage(this.pos.items[this.options.items]);
-		this.pos.goToLazyContent = 0;
-		
 	};
 
 	/**
@@ -1380,6 +1149,9 @@ stopVideo.owl
 		}
 		window.clearInterval(this.e._autoplay);
 		window.clearTimeout(this.resizeTimer);
+
+		this.fireCallback('onResize');
+
 		this.resizeTimer = window.setTimeout(this.e._responsiveCall, this.options.responsiveRefreshRate);
 		this.width.prevWindow = this.windowWidth();
 	};
@@ -1439,21 +1211,20 @@ stopVideo.owl
 			this.on(window, 'resize', this.e._resizer, false);
 		}
 
-		this.updateEvents();
+		this.dragEvents();
 	};
 
 	/**
-	 * updateEvents
+	 * dragEvents
 	 * @since 2.0.0
 	 */
 
-	Owl.prototype.updateEvents = function(){
+	Owl.prototype.dragEvents = function(){
 
 		if(this.options.touchDrag && (this.dragType[0] === 'touchstart' || this.dragType[0] === 'MSPointerDown')){
 			this.on(this.dom.stage, this.dragType[0], this.e._onDragStart,false);
 		} else if(this.options.mouseDrag && this.dragType[0] === 'mousedown'){
 			this.on(this.dom.stage, this.dragType[0], this.e._onDragStart,false);
-
 		} else {
 			this.off(this.dom.stage, this.dragType[0], this.e._onDragStart);
 		}
@@ -1476,7 +1247,7 @@ stopVideo.owl
 			this.dom.$stage.addClass('owl-grab');
 		}
 
-		this.fireCallback('onTouchStart');
+		this.fireCallback('onTouch');
 		this.drag.startTime = new Date().getTime();
 		this.setSpeed(0);
 		this.state.isTouch = true;
@@ -1611,7 +1382,7 @@ stopVideo.owl
 			this.dom.$stage.removeClass('owl-grab');
 		}
 
-		this.fireCallback('onTouchEnd');
+		this.fireCallback('onTouched');
 
 		//prevent links and images dragging;
 		this.drag.targetEl.removeAttribute("draggable");
@@ -1758,7 +1529,7 @@ stopVideo.owl
 
 		// if speed is 0 the set inMotion to false
 		if(this.speed.current !== 0 && this.pos.currentAbs !== this.pos.min){
-			this.fireCallback('onTransitionStart');
+			this.fireCallback('onTranslate');
 			this.state.inMotion = true;
 		}
 
@@ -1879,9 +1650,6 @@ stopVideo.owl
 	 */
 
 	Owl.prototype.jumpTo = function(pos,update){
-		if(this.state.lazyContent){
-			this.pos.goToLazyContent = pos;
-		}
 		this.updatePosition(pos);
 		this.setSpeed(0);
 		this.animStage(this.pos.items[this.pos.currentAbs]);
@@ -1899,20 +1667,14 @@ stopVideo.owl
 	 */
 
 	Owl.prototype.goTo = function(pos,speed){
-		if(this.state.lazyContent && this.state.inMotion){
-			return false;
-		}
-
 		this.updatePosition(pos);
 
 		if(this.state.animate){speed = 0;}
 		this.setSpeed(speed,this.pos.currentAbs);
 
-		if(this.state.animate){
-			this.plugins.animate.swap();
-		}
+		this.fireCallback('onAnimate');
+
 		this.animStage(this.pos.items[this.pos.currentAbs]);
-	
 	};
 
 	/**
@@ -1922,7 +1684,7 @@ stopVideo.owl
 
 	Owl.prototype.next = function(optionalSpeed){
 		var s = optionalSpeed || this.options.navSpeed;
-		if(this.options.loop && !this.state.lazyContent){
+		if(this.options.loop){
 			this.goToLoop(this.options.slideBy, s);
 		}else{
 			this.goTo(this.pos.current + this.options.slideBy, s);
@@ -1936,7 +1698,7 @@ stopVideo.owl
 
 	Owl.prototype.prev = function(optionalSpeed){
 		var s = optionalSpeed || this.options.navSpeed;
-		if(this.options.loop && !this.state.lazyContent){
+		if(this.options.loop){
 			this.goToLoop(-this.options.slideBy, s);
 		}else{
 			this.goTo(this.pos.current-this.options.slideBy, s);
@@ -1989,7 +1751,7 @@ stopVideo.owl
 
 	Owl.prototype.initPosition = function(init){
 
-		if( !this.dom.$oItems || !init || this.state.lazyContent ){return false;}
+		if( !this.dom.$oItems || !init ){return false;}
 		var pos = this.options.startPosition;
 
 		if(this.options.startPosition === 'URLHash'){
@@ -2120,7 +1882,7 @@ stopVideo.owl
 		this.state.inMotion = false;
 		this.updateItemState();
 		this.autoplay();
-		this.fireCallback('onTransitionEnd');
+		this.fireCallback('onTranslated');
 	};
 
 	/**
@@ -2398,23 +2160,18 @@ stopVideo.owl
 	Owl.prototype.addItem = function(content,pos){
 		pos = pos || 0;
 
-		if(this.state.lazyContent){
-			this.dom.$content = this.dom.$content.add($(content));
-			this.updateItemState(true);
+		// wrap content
+		var item = this.fillItem(content);
+		// if carousel is empty then append item
+		if(this.dom.$oItems.length === 0){
+			this.dom.$stage.append(item);
 		} else {
-			// wrap content
-			var item = this.fillItem(content);
-			// if carousel is empty then append item
-			if(this.dom.$oItems.length === 0){
-				this.dom.$stage.append(item);
-			} else {
-				// append item
-				var it = this.dom.$oItems.eq(pos);
-				if(pos !== -1){it.before(item);} else {it.after(item);}
-			}
-			// update and calculate carousel
-			this.refresh();
+			// append item
+			var it = this.dom.$oItems.eq(pos);
+			if(pos !== -1){it.before(item);} else {it.after(item);}
 		}
+		// update and calculate carousel
+		this.refresh();
 
 	};
 
@@ -2425,13 +2182,8 @@ stopVideo.owl
 	 */
 
 	Owl.prototype.removeItem = function(pos){
-		if(this.state.lazyContent){
-			this.dom.$content.splice(pos,1);
-			this.updateItemState(true);
-		} else {
-			this.dom.$oItems.eq(pos).remove();
-			this.refresh();
-		}
+		this.dom.$oItems.eq(pos).remove();
+		this.refresh();
 	};
 
 	/**
@@ -2442,92 +2194,20 @@ stopVideo.owl
 
 	Owl.prototype.addCustomEvents = function(){
 
-		this.e.next = function(e,s){this.next(s);			}.bind(this);
-		this.e.prev = function(e,s){this.prev(s);			}.bind(this);
-		this.e.goTo = function(e,p,s){this.goTo(p,s);		}.bind(this);
-		this.e.jumpTo = function(e,p){this.jumpTo(p);		}.bind(this);
-		this.e.addItem = function(e,c,p){this.addItem(c,p);	}.bind(this);
-		this.e.removeItem = function(e,p){this.removeItem(p);}.bind(this);
-		this.e.refresh = function(e){this.refresh();		}.bind(this);
-		this.e.destroy = function(e){this.destroy();		}.bind(this);
-		this.e.stop = function(){this.stop();				}.bind(this);
-		this.e.play = function(e,t,s){this.play(t,s);		}.bind(this);
-		this.e.insertContent = function(e,d){this.insertContent(d);	}.bind(this);
+		var ext = this.options.callbackExt;
 
-		this.dom.$el.on('next.owl',this.e.next);
-		this.dom.$el.on('prev.owl',this.e.prev);
-		this.dom.$el.on('goTo.owl',this.e.goTo);
-		this.dom.$el.on('jumpTo.owl',this.e.jumpTo);
-		this.dom.$el.on('addItem.owl',this.e.addItem);
-		this.dom.$el.on('removeItem.owl',this.e.removeItem);
-		this.dom.$el.on('destroy.owl',this.e.destroy);
-		this.dom.$el.on('refresh.owl',this.e.refresh);
-		this.dom.$el.on('play.owl',this.e.play);
-		this.dom.$el.on('stop.owl',this.e.stop);
-		this.dom.$el.on('insertContent.owl',this.e.insertContent);
-	
-	};
-
-	/**
-	 * on
-	 * @desc On method for adding internal events
-	 * @since 2.0.0
-	 */
-
-	Owl.prototype.on = function (element, event, listener, capture) {
-
-		if (element.addEventListener) {
-			element.addEventListener(event, listener, capture);
-		}
-		else if (element.attachEvent) {
-			element.attachEvent('on' + event, listener);
-		}
-	};
-
-	/**
-	 * off
-	 * @desc Off method for removing internal events
-	 * @since 2.0.0
-	 */
-
-	Owl.prototype.off = function (element, event, listener, capture) {
-		if (element.removeEventListener) {
-			element.removeEventListener(event, listener, capture);
-		}
-		else if (element.detachEvent) {
-			element.detachEvent('on' + event, listener);
-		}
-	};
-
-	/**
-	 * fireCallback
-	 * @since 2.0.0
-	 * @param event - string - event name
-	 * @param data - object - additional options - to do
-	 */
-
-	Owl.prototype.fireCallback = function(event, data){
-		if(!this.options.callbacks){return;}
-
-		if (typeof this.options[event] === 'function') {
-			this.options[event].apply(this,[this.dom.el,this.info,event]);
-		}
-
-		if(this.dom.el.dispatchEvent){
-
-			// dispatch event
-			var evt = document.createEvent('CustomEvent');
-
-			//evt.initEvent(event, false, true );
-			evt.initCustomEvent(event, true, true, data);
-			return this.dom.el.dispatchEvent(evt);
-
-		} else if (!this.dom.el.dispatchEvent){
-
-			//	There is no clean solution for custom events name in <=IE8 
-			//	But if you know better way, please let me know :) 
-			return this.dom.$el.trigger(event);
-		}
+		this.dom.$el.on({
+			'next.owl': 		function(e,s){ this.next(s)}.bind(this),
+			'prev.owl': 		function(e,s){ this.prev(s)}.bind(this),
+			'goTo.owl': 		function(e,p,s){ this.goTo(p,s) }.bind(this),
+			'destroy.owl': 		function(e){ this.destroy() }.bind(this),
+			'refresh.owl': 		function(e){ this.refresh() }.bind(this),
+			'play.owl': 		function(e,t,s){ this.play(t,s) }.bind(this),
+			'stop.owl':	 		function(e){ this.stop() }.bind(this),
+			'insertContent.owl':function(e,d){ this.insertContent(d) }.bind(this),
+			'addItem.owl':		function(e,d,p){ this.next(d,p) }.bind(this),
+			'removeItem.owl':	function(e,p){ this.next(p) }.bind(this)
+		})
 	};
 
 	/**
@@ -2565,32 +2245,22 @@ stopVideo.owl
 
 	Owl.prototype.onChange = function(){
 		
-		var event = $.Event('change.owl.carousel');
-		this.dom.$el.trigger(event)
-		if (event.isDefaultPrevented()) return false;
-		
 		if(!this.state.isTouch && !this.state.bypass && !this.state.responsive ){
 			
 			if(this.options.nav || this.options.dots) {
 				this.updateControls();
 			}
-
-			if(this.plugins.autoHeight){
-				this.plugins.autoHeight.setHeight();
-			}
 		}
 
 		if(!this.state.isTouch && !this.state.bypass){
 			
-			if(!this.state.lazyContent){
-				this.updateActiveItems();
-			}
+			this.updateActiveItems();
 
 			// set Status to do
 			this.storeInfo();
+			this.fireCallback('onChanged');
 		}
 		
-		this.dom.$el.trigger('changed.owl.carousel');
 	};
 
 	/**
@@ -2600,13 +2270,10 @@ stopVideo.owl
 	 */
 
 	Owl.prototype.storeInfo = function(){
-		var currentPosition = this.state.lazyContent ? this.pos.lcCurrentAbs || 0 : this.pos.current;
-		var allItems = this.state.lazyContent ? this.dom.$content.length-1 : this.num.oItems;
-		
 		this.info = {	
 			items: 			this.options.items,
-			allItems:		allItems,
-			currentPosition:currentPosition,
+			allItems:		this.num.oItems,
+			currentPosition:this.pos.current,
 			currentPage:	this.pos.currentPage,
 			allPages:		this.num.allPages,
 			autoplay:		this.state.autoplay,
@@ -2688,16 +2355,8 @@ stopVideo.owl
 			this.off(window, 'hashchange', this.e._goToHash);
 		}
 
-		this.dom.$el.off('next.owl',this.e.next);
-		this.dom.$el.off('prev.owl',this.e.prev);
-		this.dom.$el.off('goTo.owl',this.e.goTo);
-		this.dom.$el.off('jumpTo.owl',this.e.jumpTo);
-		this.dom.$el.off('addItem.owl',this.e.addItem);
-		this.dom.$el.off('removeItem.owl',this.e.removeItem);
-		this.dom.$el.off('refresh.owl',this.e.refresh);
-		this.dom.$el.off('play.owl',this.e.play);
-		this.dom.$el.off('stop.owl',this.e.stop);
-		this.dom.$stage.off('click',this.e._playVideo);
+		// Remove event handlers in the ".owl.carousel" namespace
+		this.dom.$el.off('.owl');
 
 		if(this.dom.$cc !== null){
 			this.dom.$cc.remove();
@@ -2737,6 +2396,53 @@ stopVideo.owl
 				return rtl ? a >= b : a <= b;
 			default:
 				break;
+		}
+	};
+
+		/**
+	 * on
+	 * @desc On method for adding internal events
+	 * @since 2.0.0
+	 */
+
+	Owl.prototype.on = function (element, event, listener, capture) {
+
+		if (element.addEventListener) {
+			element.addEventListener(event, listener, capture);
+		}
+		else if (element.attachEvent) {
+			element.attachEvent('on' + event, listener);
+		}
+	};
+
+	/**
+	 * off
+	 * @desc Off method for removing internal events
+	 * @since 2.0.0
+	 */
+
+	Owl.prototype.off = function (element, event, listener, capture) {
+		if (element.removeEventListener) {
+			element.removeEventListener(event, listener, capture);
+		}
+		else if (element.detachEvent) {
+			element.detachEvent('on' + event, listener);
+		}
+	};
+
+	/**
+	 * fireCallback
+	 * @since 2.0.0
+	 * @param event - string - event name
+	 * @param data - object - additional options - to do
+	 */
+
+	Owl.prototype.fireCallback = function(event, data){
+		var eventName = event+'.owl';
+		this.dom.$el.trigger(eventName);
+
+		if (typeof this.options[event] === 'function') {
+			this.options[event].apply(this,[this.dom.el,this.info,event]);
 		}
 	};
 

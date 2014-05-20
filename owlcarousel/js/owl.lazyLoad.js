@@ -3,11 +3,25 @@
  * @since 2.0.0
  */
 
-;(function ($, window, document, undefined) {
+;(function ( $, window, document, undefined ) {
 
     LazyLoad = function(scope){
     	this.owl = scope;
+    	this.owl._options = $.extend(LazyLoad.Defaults, this.owl.options);
+
+    	if (!this.owl.options.lazyLoad) return;
+
+		this.owl.dom.$el.on({
+			'onUpdated.owl': $.proxy(function(e) {
+				if (this.owl.options.lazyLoad) this.check();
+			}, this)
+		});
+
     }
+
+	LazyLoad.Defaults = {
+		lazyLoad:	false,
+	}
 
 	LazyLoad.prototype.check = function(){
 
@@ -54,8 +68,10 @@
 		});
 	};
 
-	LazyLoad.prototype.destroy = function(){};
+	LazyLoad.prototype.destroy = function(){
+		this.owl.dom.$el.off('.owl');
+	};
 
 	$.fn.owlCarousel.Constructor.Plugins['lazyLoad'] = LazyLoad;
 
-}(jQuery, this, this.document));
+})( window.Zepto || window.jQuery, window,  document );

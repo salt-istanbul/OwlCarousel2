@@ -3,11 +3,23 @@
  * @since 2.0.0
  */
 
-;(function ($, window, document, undefined) {
+;(function ( $, window, document, undefined ) {
 
     AutoHeight = function(scope){
     	this.owl = scope;
-    }
+    	this.owl._options = $.extend(AutoHeight.Defaults, this.owl.options);
+
+    	this.owl.dom.$el.on({
+			'onRefreshed.owl.carousel onChanged.owl.carousel': $.proxy(function(e) {
+				if (this.owl.options.autoHeight) this.setHeight();
+			}, this)
+		});
+    };
+
+	AutoHeight.Defaults = {
+		autoHeight: false,
+		autoHeightClass: 'owl-height'
+	}
 
 	AutoHeight.prototype.setHeight = function(callback){
 
@@ -33,8 +45,10 @@
 		}, 100);
 	};
 
-	AutoHeight.prototype.destroy = function(){};
+	AutoHeight.prototype.destroy = function(){
+		this.owl.dom.$el.off('.owl');
+	};
 
     $.fn.owlCarousel.Constructor.Plugins['autoHeight'] = AutoHeight;
     
-}(jQuery, this, this.document));
+})( window.Zepto || window.jQuery, window,  document );

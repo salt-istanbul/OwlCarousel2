@@ -3,11 +3,11 @@
  * @since 2.0.0
  */
 
-;(function ($, window, document, undefined) {
+;(function ( $, window, document, undefined ) {
 
 	Video = function(scope){
 		this.owl = scope;
-		this.owl.options = $.extend(Video.Defaults, this.owl.options);
+		this.owl._options = $.extend(Video.Defaults, this.owl.options);
 		
 		if (!this.owl.options.video) return;
 
@@ -16,14 +16,14 @@
 		}, this));
 
 		this.owl.dom.$el.on({
-			'resize.owl.carousel': $.proxy(function(e) {
+			'onResize.owl': $.proxy(function(e) {
 				if (!this.isInFullScreen()) e.preventDefault();
 			}, this),
-			'refresh.owl.carousel changed.owl.carousel': $.proxy(function(e) {
+			'onRefresh.owl onChanged.owl': $.proxy(function(e) {
 				if (this.owl.state.videoPlay) this.stopVideo();
 			}, this),
-			'refresh.owl.carousel': $.proxy(function(e) {
-				this.owl.dom.$el.one('update.owl.carousel', $.proxy(this.checkVideoLinks, this));
+			'onRefresh.owl': $.proxy(function(e) {
+				this.owl.dom.$el.one('onUpdated.owl', $.proxy(this.checkVideoLinks, this));
 			}, this)
 		});
 	}
@@ -41,7 +41,6 @@
 	 */
 
 	Video.prototype.checkVideoLinks = function(){
-		if(!this.owl.options.video){return false;}
 		var videoEl,item;
 
 		for(var i = 0; i<this.owl.num.items; i++){
@@ -253,8 +252,9 @@
 
 	Video.prototype.destroy = function(){
 		this.owl.dom.$stage.off(this.owl.dragType[2]);
+		this.owl.dom.$stage.off('.owl');
 	}
 
 	$.fn.owlCarousel.Constructor.Plugins['video'] = Video;
 
-}(jQuery, this, this.document));
+})( window.Zepto || window.jQuery, window,  document );

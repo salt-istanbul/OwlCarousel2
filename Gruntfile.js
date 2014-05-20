@@ -25,7 +25,7 @@ module.exports = function(grunt) {
     clean: {
       dist: ['dist']
     },
-    
+
     /*jshint: {
       options: {
         jshintrc: 'src/js/.jshintrc'
@@ -43,6 +43,30 @@ module.exports = function(grunt) {
         src: '<%= jshint.src.src %>'
       }
     },*/
+    
+    // Connect 
+    connect: {
+      options: {
+        port: 9000,
+        open: true,
+        livereload: true,
+        hostname: '0.0.0.0',
+        
+      },
+      test:{
+        base: "/"
+      }
+    },
+    watch: {
+      options: {
+        livereload: true
+      },
+      templates: {
+        files: ['owlcarousel/js/*.js'],
+        tasks: ['concat:src']
+      }
+    },
+    
 
     concat: {
       options: {
@@ -51,7 +75,7 @@ module.exports = function(grunt) {
       },
       src: {
         src: pkg.scripts,
-        dest: 'dist/js/owl.carousel.js'
+        dest: 'owlcarousel/owl.carousel.js'
       }
     },
 
@@ -66,9 +90,12 @@ module.exports = function(grunt) {
     }
   });
 
+
+
   // These plugins provide necessary tasks.
   require('load-grunt-tasks')(grunt, {scope: 'dependencies'});
   require('time-grunt')(grunt);
+
 
   // JS distribution task.
   grunt.registerTask('dist-js', ['concat:src', 'uglify:dist']);
@@ -77,5 +104,5 @@ module.exports = function(grunt) {
   grunt.registerTask('dist', ['clean', 'dist-js']);
 
   // Default task.
-  grunt.registerTask('default', ['dist']);
+  grunt.registerTask('default', ['concat','connect:test','watch']);
 };

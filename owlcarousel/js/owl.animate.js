@@ -3,11 +3,29 @@
  * @since 2.0.0
  */
 
-;(function ($, window, document, undefined) {
+;(function ( $, window, document, undefined ) {
 
     Animate = function(scope){
     	this.owl = scope;
-    }
+    	this.owl._options = $.extend(Animate.Defaults, this.owl.options);
+
+    	if((this.owl.options.animateIn || this.owl.options.animateOut) && this.owl.options.items === 1 && this.owl.support3d){
+			this.owl.state.animate = true;
+		} else {
+			this.owl.state.animate = false;
+		}
+
+    	this.owl.dom.$el.on({
+			'onAnimate.owl': $.proxy(function(e) {
+				if (this.owl.state.animate) this.swap();
+			}, this)
+		});
+    };
+
+	Animate.Defaults = {
+		animateOut:	false,
+		animateIn: false
+	}
 
     Animate.prototype.swap = function(){
 		var prevItem = this.owl.dom.$items.eq(this.owl.pos.prev),
@@ -50,8 +68,10 @@
 			.one('webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend', removeStyles);
 		}
 	};
-	Animate.prototype.destroy = function(){};
+	Animate.prototype.destroy = function(){
+		this.owl.dom.$el.off('.owl');
+	};
 	$.fn.owlCarousel.Constructor.Plugins['animate'] = Animate;
 	
-}(jQuery, this, this.document));
+})( window.Zepto || window.jQuery, window,  document );
 
